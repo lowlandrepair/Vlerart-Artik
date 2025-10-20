@@ -1,15 +1,17 @@
 
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Menu, X } from "lucide-react";
+import { Menu, X, Shield } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ThemeToggle from "./ThemeToggle";
 import LanguageSelector from "./LanguageSelector";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useAdmin } from "@/hooks/useAdmin";
 
 export default function Navbar() {
   const { t } = useLanguage();
+  const { isAdmin } = useAdmin();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   
@@ -49,6 +51,14 @@ export default function Navbar() {
 
         <div className="hidden md:flex items-center space-x-2">
           <ThemeToggle />
+          {isAdmin && (
+            <Button asChild variant="outline" size="sm">
+              <Link to="/admin">
+                <Shield className="mr-2 h-4 w-4" />
+                Admin
+              </Link>
+            </Button>
+          )}
           <Button asChild className="btn-primary">
             <Link to="/booking">{t.nav.bookNow}</Link>
           </Button>
@@ -80,6 +90,14 @@ export default function Navbar() {
                       {link.name}
                     </Link>
                   </li>)}
+                {isAdmin && (
+                  <li>
+                    <Link to="/admin" className="text-lg font-medium transition-colors hover:text-primary flex items-center" onClick={() => setMobileMenuOpen(false)}>
+                      <Shield className="mr-2 h-5 w-5" />
+                      Admin
+                    </Link>
+                  </li>
+                )}
               </ul>
             </div>
             
