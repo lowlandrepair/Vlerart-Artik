@@ -24,43 +24,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ApartmentProps } from "@/components/ApartmentCard";
-
-// Sample apartments data
-const apartmentsData: ApartmentProps[] = [
-  {
-    id: "1",
-    name: "Deluxe Sea View Suite",
-    description: "Luxurious suite with panoramic sea views, modern amenities, and a private balcony.",
-    price: 180,
-    capacity: 2,
-    size: 45,
-    image: "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=800&h=600&fit=crop",
-    location: "Beachfront",
-    features: ["Wi-Fi", "Kitchen", "Bathroom", "Air Conditioning", "TV", "Balcony"]
-  },
-  {
-    id: "2",
-    name: "Premium Family Apartment",
-    description: "Spacious apartment ideal for families, with full kitchen and stunning coastal views.",
-    price: 250,
-    capacity: 4,
-    size: 75,
-    image: "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800&h=600&fit=crop",
-    location: "Second row",
-    features: ["Wi-Fi", "Kitchen", "Bathroom", "Air Conditioning", "TV", "Washing Machine"]
-  },
-  {
-    id: "3",
-    name: "Executive Beach Studio",
-    description: "Elegant studio with direct beach access, modern design, and premium finishes.",
-    price: 150,
-    capacity: 2,
-    size: 35,
-    image: "https://images.unsplash.com/photo-1598928506311-c55ded91a20c?w=800&h=600&fit=crop",
-    location: "Beachfront",
-    features: ["Wi-Fi", "Kitchenette", "Bathroom", "Air Conditioning", "TV"]
-  },
-];
+import { supabase } from "@/integrations/supabase/client";
 
 export default function BookingPage() {
   const [startDate, setStartDate] = useState<Date | undefined>(new Date());
@@ -69,6 +33,8 @@ export default function BookingPage() {
   const [children, setChildren] = useState("0");
   const [selectedApartment, setSelectedApartment] = useState<ApartmentProps | null>(null);
   const [currentStep, setCurrentStep] = useState(1);
+  const [apartmentsData, setApartmentsData] = useState<ApartmentProps[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -90,7 +56,40 @@ export default function BookingPage() {
   useEffect(() => {
     // Scroll to top when component mounts
     window.scrollTo(0, 0);
+    // Fetch apartments from Supabase
+    fetchApartments();
   }, []);
+
+  const fetchApartments = async () => {
+    try {
+      setIsLoading(true);
+      const { data, error } = await supabase
+        .from('places')
+        .select('*')
+        .eq('is_active', true);
+      
+      if (error) throw error;
+      
+      if (data) {
+        const mappedApartments: ApartmentProps[] = data.map((place) => ({
+          id: place.id,
+          name: place.name,
+          description: place.description || '',
+          price: Number(place.price_per_night) || 0,
+          capacity: place.max_guests || 2,
+          size: place.bedrooms ? place.bedrooms * 30 : 45, // Estimate size based on bedrooms
+          image: place.image_url || 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=800&h=600&fit=crop',
+          location: place.city || 'Beachfront',
+          features: place.amenities || []
+        }));
+        setApartmentsData(mappedApartments);
+      }
+    } catch (error) {
+      console.error('Error fetching apartments:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
   
   // Calculate nights and total price
   const nightsCount = startDate && endDate ? differenceInDays(endDate, startDate) : 0;
@@ -332,8 +331,13 @@ export default function BookingPage() {
                 
                 {/* Apartments Selection */}
                 <h2 className="text-xl font-semibold mb-4">Select Your Accommodation</h2>
-                <div className="space-y-6">
-                  {apartmentsData.map((apartment) => (
+                {isLoading ? (
+                  <div className="text-center py-8">Loading apartments...</div>
+                ) : apartmentsData.length === 0 ? (
+                  <div className="text-center py-8">No apartments available at the moment.</div>
+                ) : (
+                  <div className="space-y-6">
+                    {apartmentsData.map((apartment) => (
                     <div 
                       key={apartment.id}
                       className={cn(
@@ -388,8 +392,9 @@ export default function BookingPage() {
                         </div>
                       </div>
                     </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
                 
                 <div className="flex justify-end mt-8">
                   <Button 
