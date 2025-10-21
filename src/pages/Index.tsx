@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import HeroSection from "@/components/HeroSection";
@@ -9,51 +9,44 @@ import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { ArrowRight, Wifi, Utensils, Waves, LifeBuoy, MapPin, Coffee } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
-
-// Sample apartments data
-const featuredApartments: ApartmentProps[] = [
-  {
-    id: "1",
-    name: "Deluxe Sea View Suite",
-    description: "Luxurious suite with panoramic sea views, modern amenities, and a private balcony.",
-    price: 180,
-    capacity: 2,
-    size: 45,
-    image: "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=800&h=600&fit=crop",
-    location: "Beachfront",
-    features: ["Wi-Fi", "Kitchen", "Bathroom", "Air Conditioning", "TV", "Balcony"]
-  },
-  {
-    id: "2",
-    name: "Premium Family Apartment",
-    description: "Spacious apartment ideal for families, with full kitchen and stunning coastal views.",
-    price: 250,
-    capacity: 4,
-    size: 75,
-    image: "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800&h=600&fit=crop",
-    location: "Second row",
-    features: ["Wi-Fi", "Kitchen", "Bathroom", "Air Conditioning", "TV", "Washing Machine"]
-  },
-  {
-    id: "3",
-    name: "Executive Beach Studio",
-    description: "Elegant studio with direct beach access, modern design, and premium finishes.",
-    price: 150,
-    capacity: 2,
-    size: 35,
-    image: "https://images.unsplash.com/photo-1598928506311-c55ded91a20c?w=800&h=600&fit=crop",
-    location: "Beachfront",
-    features: ["Wi-Fi", "Kitchenette", "Bathroom", "Air Conditioning", "TV"]
-  }
-];
+import { supabase } from "@/integrations/supabase/client";
 
 export default function Index() {
   const { t } = useLanguage();
+  const [featuredApartments, setFeaturedApartments] = useState<ApartmentProps[]>([]);
   
   useEffect(() => {
-    // Scroll to top when component mounts
     window.scrollTo(0, 0);
+    fetchPlaces();
   }, []);
+
+  const fetchPlaces = async () => {
+    const { data, error } = await supabase
+      .from("places")
+      .select("*")
+      .eq("is_active", true)
+      .limit(3);
+
+    if (error) {
+      console.error("Error fetching places:", error);
+      return;
+    }
+
+    if (data) {
+      const apartments: ApartmentProps[] = data.map((place) => ({
+        id: place.id,
+        name: place.name,
+        description: place.description || "",
+        price: Number(place.price_per_night) || 0,
+        capacity: place.max_guests || 0,
+        size: place.bedrooms ? place.bedrooms * 25 : 35,
+        image: place.image_url || "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=800&h=600&fit=crop",
+        location: place.city || "Unknown",
+        features: place.amenities || []
+      }));
+      setFeaturedApartments(apartments);
+    }
+  };
   
   // Feature items
   const features = [

@@ -2,6 +2,14 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Building2, Users, MapPin, TrendingUp } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
+
+type ActivityItem = {
+  type: "user" | "place_added" | "place_updated";
+  message: string;
+  timestamp: string;
+  color: string;
+};
 
 export default function AdminStats() {
   const [stats, setStats] = useState({
@@ -10,9 +18,11 @@ export default function AdminStats() {
     totalUsers: 0,
     cities: 0,
   });
+  const [recentActivity, setRecentActivity] = useState<ActivityItem[]>([]);
 
   useEffect(() => {
     fetchStats();
+    fetchRecentActivity();
   }, []);
 
   const fetchStats = async () => {
@@ -33,6 +43,49 @@ export default function AdminStats() {
       totalUsers: usersResult.count || 0,
       cities: uniqueCities,
     });
+  };
+
+  const fetchRecentActivity = async () => {
+    const activities: ActivityItem[] = [];
+
+    const [usersResult, placesResult] = await Promise.all([
+      supabase
+        .from("profiles")
+        .select("full_name, created_at")
+        .order("created_at", { ascending: false })
+        .limit(5),
+      supabase
+        .from("places")
+        .select("name, created_at, updated_at")
+        .order("updated_at", { ascending: false })
+        .limit(5),
+    ]);
+
+    if (usersResult.data) {
+      usersResult.data.forEach((user) => {
+        activities.push({
+          type: "user",
+          message: `New user registered: ${user.full_name || "Unknown"}`,
+          timestamp: user.created_at,
+          color: "bg-purple-500",
+        });
+      });
+    }
+
+    if (placesResult.data) {
+      placesResult.data.forEach((place) => {
+        const isNew = new Date(place.created_at).getTime() === new Date(place.updated_at).getTime();
+        activities.push({
+          type: isNew ? "place_added" : "place_updated",
+          message: isNew ? `New place added: ${place.name}` : `Place updated: ${place.name}`,
+          timestamp: place.updated_at,
+          color: isNew ? "bg-green-500" : "bg-blue-500",
+        });
+      });
+    }
+
+    activities.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    setRecentActivity(activities.slice(0, 5));
   };
 
   const statCards = [
@@ -97,21 +150,19 @@ export default function AdminStats() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            <div className="flex items-center gap-4 text-sm">
-              <div className="w-2 h-2 rounded-full bg-green-500" />
-              <span className="flex-1">System is running smoothly</span>
-              <span className="text-muted-foreground">Just now</span>
-            </div>
-            <div className="flex items-center gap-4 text-sm">
-              <div className="w-2 h-2 rounded-full bg-blue-500" />
-              <span className="flex-1">Database backup completed</span>
-              <span className="text-muted-foreground">2 hours ago</span>
-            </div>
-            <div className="flex items-center gap-4 text-sm">
-              <div className="w-2 h-2 rounded-full bg-purple-500" />
-              <span className="flex-1">New user registered</span>
-              <span className="text-muted-foreground">5 hours ago</span>
-            </div>
+            {recentActivity.length > 0 ? (
+              recentActivity.map((activity, index) => (
+                <div key={index} className="flex items-center gap-4 text-sm">
+                  <div className={`w-2 h-2 rounded-full ${activity.color}`} />
+                  <span className="flex-1">{activity.message}</span>
+                  <span className="text-muted-foreground">
+                    {formatDistanceToNow(new Date(activity.timestamp), { addSuffix: true })}
+                  </span>
+                </div>
+              ))
+            ) : (
+              <div className="text-sm text-muted-foreground">No recent activity</div>
+            )}
           </div>
         </CardContent>
       </Card>
