@@ -5,7 +5,9 @@ export const sq = {
     amenities: "Shërbimet",
     gallery: "Galeria",
     contact: "Kontakti",
-    bookNow: "Rezervo Tani"
+    bookNow: "Rezervo Tani",
+    login: "Hyr",
+    logout: "Dil"
   },
   hero: {
     subtitle: "AKOMODIM LUKSOZ NË BREGUN E DETIT",

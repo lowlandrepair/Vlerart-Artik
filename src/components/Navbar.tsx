@@ -1,19 +1,24 @@
-
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
-import { Menu, X, Shield } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { Menu, X, Shield, LogOut, LogIn } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ThemeToggle from "./ThemeToggle";
 import LanguageSelector from "./LanguageSelector";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAdmin } from "@/hooks/useAdmin";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import type { User } from "@supabase/supabase-js";
 
 export default function Navbar() {
   const { t } = useLanguage();
   const { isAdmin } = useAdmin();
+  const navigate = useNavigate();
+  const { toast } = useToast();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
   
   const navLinks = [
     { name: t.nav.home, path: "/" },
@@ -33,6 +38,28 @@ export default function Navbar() {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, [scrolled]);
+
+  useEffect(() => {
+    // Check current session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    toast({
+      title: "Logged out successfully",
+    });
+    navigate("/");
+  };
   
   return <header className={cn("fixed top-0 left-0 right-0 z-50 transition-all duration-300", scrolled ? "bg-white/80 dark:bg-card/80 backdrop-blur-lg py-3 shadow-md" : "bg-transparent py-5")}>
       <nav className="container flex justify-between items-center">
@@ -56,6 +83,19 @@ export default function Navbar() {
               <Link to="/admin">
                 <Shield className="mr-2 h-4 w-4" />
                 Admin
+              </Link>
+            </Button>
+          )}
+          {user ? (
+            <Button variant="outline" size="sm" onClick={handleLogout}>
+              <LogOut className="mr-2 h-4 w-4" />
+              {t.nav.logout}
+            </Button>
+          ) : (
+            <Button asChild variant="outline" size="sm">
+              <Link to="/auth">
+                <LogIn className="mr-2 h-4 w-4" />
+                {t.nav.login}
               </Link>
             </Button>
           )}
@@ -95,6 +135,21 @@ export default function Navbar() {
                     <Link to="/admin" className="text-lg font-medium transition-colors hover:text-primary flex items-center" onClick={() => setMobileMenuOpen(false)}>
                       <Shield className="mr-2 h-5 w-5" />
                       Admin
+                    </Link>
+                  </li>
+                )}
+                {user ? (
+                  <li>
+                    <button onClick={() => { handleLogout(); setMobileMenuOpen(false); }} className="text-lg font-medium transition-colors hover:text-primary flex items-center w-full text-left">
+                      <LogOut className="mr-2 h-5 w-5" />
+                      {t.nav.logout}
+                    </button>
+                  </li>
+                ) : (
+                  <li>
+                    <Link to="/auth" className="text-lg font-medium transition-colors hover:text-primary flex items-center" onClick={() => setMobileMenuOpen(false)}>
+                      <LogIn className="mr-2 h-5 w-5" />
+                      {t.nav.login}
                     </Link>
                   </li>
                 )}

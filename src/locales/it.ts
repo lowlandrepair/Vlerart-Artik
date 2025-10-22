@@ -5,7 +5,9 @@ export const it = {
     amenities: "Servizi",
     gallery: "Galleria",
     contact: "Contatti",
-    bookNow: "Prenota Ora"
+    bookNow: "Prenota Ora",
+    login: "Accedi",
+    logout: "Esci"
   },
   hero: {
     subtitle: "ALLOGGI DI LUSSO SUL MARE",

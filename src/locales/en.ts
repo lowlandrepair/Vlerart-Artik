@@ -5,7 +5,9 @@ export const en = {
     amenities: "Amenities",
     gallery: "Gallery",
     contact: "Contact",
-    bookNow: "Book Now"
+    bookNow: "Book Now",
+    login: "Login",
+    logout: "Logout"
   },
   hero: {
     subtitle: "BEACHFRONT LUXURY ACCOMMODATION",
