@@ -26,10 +26,13 @@ export type Database = {
           description: string | null
           id: string
           image_url: string | null
+          images: string[] | null
           is_active: boolean | null
           max_guests: number | null
           name: string
           price_per_night: number | null
+          rating: number | null
+          total_reviews: number | null
           updated_at: string | null
         }
         Insert: {
@@ -43,10 +46,13 @@ export type Database = {
           description?: string | null
           id?: string
           image_url?: string | null
+          images?: string[] | null
           is_active?: boolean | null
           max_guests?: number | null
           name: string
           price_per_night?: number | null
+          rating?: number | null
+          total_reviews?: number | null
           updated_at?: string | null
         }
         Update: {
@@ -60,10 +66,13 @@ export type Database = {
           description?: string | null
           id?: string
           image_url?: string | null
+          images?: string[] | null
           is_active?: boolean | null
           max_guests?: number | null
           name?: string
           price_per_night?: number | null
+          rating?: number | null
+          total_reviews?: number | null
           updated_at?: string | null
         }
         Relationships: []
