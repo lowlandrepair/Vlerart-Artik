@@ -56,18 +56,27 @@ export default function PlacesManager() {
   }, []);
 
   const fetchPlaces = async () => {
-    setLoading(true);
-    const { data, error } = await supabase
-      .from("places")
-      .select("*")
-      .order("created_at", { ascending: false });
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from("places")
+        .select("*")
+        .order("created_at", { ascending: false });
 
-    if (error) {
-      toast.error("Error fetching places");
-    } else {
-      setPlaces(data || []);
+      if (error) {
+        console.error("Error fetching places:", error);
+        toast.error(`Error fetching places: ${error.message}`);
+        setPlaces([]);
+      } else {
+        setPlaces(data || []);
+      }
+    } catch (err) {
+      console.error("Unexpected error:", err);
+      toast.error("Failed to load places");
+      setPlaces([]);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {

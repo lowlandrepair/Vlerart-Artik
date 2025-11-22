@@ -17,40 +17,16 @@ export default function ProtectedRoute({ children, requireAdmin = false }: Prote
 
   useEffect(() => {
     const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        navigate("/auth");
-        return;
-      }
-
-      setUser(session.user);
-
-      if (requireAdmin) {
-        const { data: roles } = await supabase
-          .from("user_roles")
-          .select("role")
-          .eq("user_id", session.user.id)
-          .eq("role", "admin")
-          .maybeSingle();
-
-        if (!roles) {
-          navigate("/");
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!session) {
+          navigate("/auth");
           return;
         }
-        setIsAdmin(true);
-      }
 
-      setLoading(false);
-    };
-
-    checkAuth();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (!session) {
-        navigate("/auth");
-      } else {
         setUser(session.user);
+
         if (requireAdmin) {
           const { data: roles } = await supabase
             .from("user_roles")
@@ -59,7 +35,38 @@ export default function ProtectedRoute({ children, requireAdmin = false }: Prote
             .eq("role", "admin")
             .maybeSingle();
 
-          setIsAdmin(!!roles);
+          if (!roles) {
+            navigate("/");
+            return;
+          }
+          setIsAdmin(true);
+        }
+
+        setLoading(false);
+      } catch (error) {
+        console.error("Error checking auth:", error);
+        navigate("/auth");
+      }
+    };
+
+    checkAuth();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!session) {
+        navigate("/auth");
+      } else {
+        setUser(session.user);
+        if (requireAdmin) {
+          setTimeout(async () => {
+            const { data: roles } = await supabase
+              .from("user_roles")
+              .select("role")
+              .eq("user_id", session.user.id)
+              .eq("role", "admin")
+              .maybeSingle();
+
+            setIsAdmin(!!roles);
+          }, 0);
         }
       }
     });

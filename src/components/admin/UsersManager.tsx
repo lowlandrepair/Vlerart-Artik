@@ -34,33 +34,40 @@ export default function UsersManager() {
   }, []);
 
   const fetchUsers = async () => {
-    setLoading(true);
-    
-    const [profilesResult, rolesResult] = await Promise.all([
-      supabase.from("profiles").select("*").order("created_at", { ascending: false }),
-      supabase.from("user_roles").select("*"),
-    ]);
+    try {
+      setLoading(true);
+      
+      const [profilesResult, rolesResult] = await Promise.all([
+        supabase.from("profiles").select("*").order("created_at", { ascending: false }),
+        supabase.from("user_roles").select("*"),
+      ]);
 
-    if (profilesResult.error) {
-      toast.error("Error fetching users");
-    } else {
-      setProfiles(profilesResult.data || []);
+      if (profilesResult.error) {
+        console.error("Error fetching users:", profilesResult.error);
+        toast.error(`Error fetching users: ${profilesResult.error.message}`);
+      } else {
+        setProfiles(profilesResult.data || []);
+      }
+
+      if (rolesResult.error) {
+        console.error("Error fetching roles:", rolesResult.error);
+        toast.error(`Error fetching roles: ${rolesResult.error.message}`);
+      } else {
+        const rolesMap: Record<string, string[]> = {};
+        rolesResult.data?.forEach((role: UserRole) => {
+          if (!rolesMap[role.user_id]) {
+            rolesMap[role.user_id] = [];
+          }
+          rolesMap[role.user_id].push(role.role);
+        });
+        setRoles(rolesMap);
+      }
+    } catch (error) {
+      console.error("Unexpected error fetching users:", error);
+      toast.error("Failed to load users");
+    } finally {
+      setLoading(false);
     }
-
-    if (rolesResult.error) {
-      toast.error("Error fetching roles");
-    } else {
-      const rolesMap: Record<string, string[]> = {};
-      rolesResult.data?.forEach((role: UserRole) => {
-        if (!rolesMap[role.user_id]) {
-          rolesMap[role.user_id] = [];
-        }
-        rolesMap[role.user_id].push(role.role);
-      });
-      setRoles(rolesMap);
-    }
-
-    setLoading(false);
   };
 
   const handleRoleChange = async (userId: string, newRole: string) => {
