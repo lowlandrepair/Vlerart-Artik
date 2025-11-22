@@ -26,66 +26,91 @@ export default function AdminStats() {
   }, []);
 
   const fetchStats = async () => {
-    const [placesResult, usersResult, citiesResult] = await Promise.all([
-      supabase.from("places").select("id, is_active", { count: "exact" }),
-      supabase.from("profiles").select("id", { count: "exact" }),
-      supabase.from("places").select("city"),
-    ]);
+    try {
+      const [placesResult, usersResult, citiesResult] = await Promise.all([
+        supabase.from("places").select("id, is_active", { count: "exact" }),
+        supabase.from("profiles").select("id", { count: "exact" }),
+        supabase.from("places").select("city"),
+      ]);
 
-    const activePlaces = placesResult.data?.filter((p) => p.is_active).length || 0;
-    const uniqueCities = new Set(
-      citiesResult.data?.filter((p) => p.city).map((p) => p.city)
-    ).size;
+      if (placesResult.error) {
+        console.error("Error fetching places:", placesResult.error);
+      }
+      if (usersResult.error) {
+        console.error("Error fetching users:", usersResult.error);
+      }
+      if (citiesResult.error) {
+        console.error("Error fetching cities:", citiesResult.error);
+      }
 
-    setStats({
-      totalPlaces: placesResult.count || 0,
-      activePlaces,
-      totalUsers: usersResult.count || 0,
-      cities: uniqueCities,
-    });
+      const activePlaces = placesResult.data?.filter((p) => p.is_active).length || 0;
+      const uniqueCities = new Set(
+        citiesResult.data?.filter((p) => p.city).map((p) => p.city)
+      ).size;
+
+      setStats({
+        totalPlaces: placesResult.count || 0,
+        activePlaces,
+        totalUsers: usersResult.count || 0,
+        cities: uniqueCities,
+      });
+    } catch (error) {
+      console.error("Unexpected error fetching stats:", error);
+    }
   };
 
   const fetchRecentActivity = async () => {
-    const activities: ActivityItem[] = [];
+    try {
+      const activities: ActivityItem[] = [];
 
-    const [usersResult, placesResult] = await Promise.all([
-      supabase
-        .from("profiles")
-        .select("full_name, created_at")
-        .order("created_at", { ascending: false })
-        .limit(5),
-      supabase
-        .from("places")
-        .select("name, created_at, updated_at")
-        .order("updated_at", { ascending: false })
-        .limit(5),
-    ]);
+      const [usersResult, placesResult] = await Promise.all([
+        supabase
+          .from("profiles")
+          .select("full_name, created_at")
+          .order("created_at", { ascending: false })
+          .limit(5),
+        supabase
+          .from("places")
+          .select("name, created_at, updated_at")
+          .order("updated_at", { ascending: false })
+          .limit(5),
+      ]);
 
-    if (usersResult.data) {
-      usersResult.data.forEach((user) => {
-        activities.push({
-          type: "user",
-          message: `New user registered: ${user.full_name || "Unknown"}`,
-          timestamp: user.created_at,
-          color: "bg-purple-500",
+      if (usersResult.error) {
+        console.error("Error fetching users activity:", usersResult.error);
+      }
+      if (placesResult.error) {
+        console.error("Error fetching places activity:", placesResult.error);
+      }
+
+      if (usersResult.data) {
+        usersResult.data.forEach((user) => {
+          activities.push({
+            type: "user",
+            message: `New user registered: ${user.full_name || "Unknown"}`,
+            timestamp: user.created_at,
+            color: "bg-purple-500",
+          });
         });
-      });
-    }
+      }
 
-    if (placesResult.data) {
-      placesResult.data.forEach((place) => {
-        const isNew = new Date(place.created_at).getTime() === new Date(place.updated_at).getTime();
-        activities.push({
-          type: isNew ? "place_added" : "place_updated",
-          message: isNew ? `New place added: ${place.name}` : `Place updated: ${place.name}`,
-          timestamp: place.updated_at,
-          color: isNew ? "bg-green-500" : "bg-blue-500",
+      if (placesResult.data) {
+        placesResult.data.forEach((place) => {
+          const isNew = new Date(place.created_at).getTime() === new Date(place.updated_at).getTime();
+          activities.push({
+            type: isNew ? "place_added" : "place_updated",
+            message: isNew ? `New place added: ${place.name}` : `Place updated: ${place.name}`,
+            timestamp: place.updated_at,
+            color: isNew ? "bg-green-500" : "bg-blue-500",
+          });
         });
-      });
-    }
+      }
 
-    activities.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-    setRecentActivity(activities.slice(0, 5));
+      activities.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+      setRecentActivity(activities.slice(0, 5));
+    } catch (error) {
+      console.error("Unexpected error fetching activity:", error);
+    }
   };
 
   const statCards = [
