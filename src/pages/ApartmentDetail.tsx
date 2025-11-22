@@ -15,13 +15,6 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-} from "@/components/ui/carousel";
 
 interface Place {
   id: string;
@@ -32,7 +25,6 @@ interface Place {
   bedrooms: number | null;
   bathrooms: number | null;
   image_url: string | null;
-  images: string[] | null;
   city: string | null;
   country: string | null;
   address: string | null;
@@ -98,13 +90,6 @@ export default function ApartmentDetail() {
   }
 
   const estimatedSize = place.bedrooms ? place.bedrooms * 30 : 45;
-  
-  // Get all available images
-  const allImages = place.images && place.images.length > 0 
-    ? place.images 
-    : place.image_url 
-    ? [place.image_url] 
-    : ['https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=1200&h=800&fit=crop'];
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -121,35 +106,15 @@ export default function ApartmentDetail() {
           </Button>
         </section>
 
-        {/* Image Gallery */}
+        {/* Hero Image */}
         <section className="container mb-8">
-          {allImages.length > 1 ? (
-            <Carousel className="w-full">
-              <CarouselContent>
-                {allImages.map((image, index) => (
-                  <CarouselItem key={index}>
-                    <div className="relative h-[400px] md:h-[500px] rounded-2xl overflow-hidden">
-                      <img 
-                        src={image} 
-                        alt={`${place.name} - Photo ${index + 1}`}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  </CarouselItem>
-                ))}
-              </CarouselContent>
-              <CarouselPrevious className="left-4" />
-              <CarouselNext className="right-4" />
-            </Carousel>
-          ) : (
-            <div className="relative h-[400px] md:h-[500px] rounded-2xl overflow-hidden">
-              <img 
-                src={allImages[0]} 
-                alt={place.name}
-                className="w-full h-full object-cover"
-              />
-            </div>
-          )}
+          <div className="relative h-[400px] md:h-[500px] rounded-2xl overflow-hidden">
+            <img 
+              src={place.image_url || 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=1200&h=800&fit=crop'} 
+              alt={place.name}
+              className="w-full h-full object-cover"
+            />
+          </div>
         </section>
 
         {/* Content */}

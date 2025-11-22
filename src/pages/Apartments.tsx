@@ -49,7 +49,7 @@ export default function Apartments() {
           price: Number(place.price_per_night) || 0,
           capacity: place.max_guests || 2,
           size: place.bedrooms ? place.bedrooms * 30 : 45, // Estimate size based on bedrooms
-          image: place.image_url || (place.images && place.images.length > 0 ? place.images[0] : 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=800&h=600&fit=crop'),
+          image: place.image_url || 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=800&h=600&fit=crop',
           location: place.city || 'Beachfront',
           features: place.amenities || []
         }));
